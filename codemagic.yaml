@@ -1,0 +1,34 @@
+workflows:
+  ios-release:
+    name: Valora iOS Release
+    max_build_duration: 60
+    environment:
+      vars:
+        EXPO_PUBLIC_SUPABASE_URL: ${EXPO_PUBLIC_SUPABASE_URL}
+        EXPO_PUBLIC_SUPABASE_ANON_KEY: ${EXPO_PUBLIC_SUPABASE_ANON_KEY}
+        EXPO_PUBLIC_API_BASE_URL: ${EXPO_PUBLIC_API_BASE_URL}
+      xcode: latest
+      node: 22
+      cocoapods: default
+    scripts:
+      - name: Install dependencies
+        script: |
+          cd mobile
+          if [ -f yarn.lock ]; then yarn install --frozen-lockfile; else npm install; fi
+          cd ios
+          pod install --repo-update
+      - name: Build iOS archive
+        script: |
+          cd mobile
+          npx react-native bundle --platform ios --dev false --entry-file index.js --bundle-output ios/main.jsbundle --assets-dest ios
+          xcodebuild -workspace ios/ValoraMobile.xcworkspace \
+            -scheme ValoraMobile \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath build/ValoraMobile.xcarchive archive
+          xcodebuild -exportArchive \
+            -archivePath build/ValoraMobile.xcarchive \
+            -exportPath build/ipa \
+            -exportOptionsPlist ios/exportOptionsAdHoc.plist
+    artifacts:
+      - /workspace/mobile/build/ipa/*.ipa

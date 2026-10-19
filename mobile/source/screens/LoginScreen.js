@@ -25,13 +25,22 @@ export default function LoginScreen({ navigation }) {
   const [carregando, setCarregando] = useState(false);
 
   async function handleLogin() {
-    if (!email || !senha)
+    const emailLimpo = String(email ?? "").trim();
+    const senhaLimpa = String(senha ?? "").trim();
+
+    if (!emailLimpo || !senhaLimpa) {
       return Alert.alert("Atenção", "Preencha e-mail e senha.");
+    }
+
     setCarregando(true);
     try {
-      await login(email, senha);
-    } catch {
-      Alert.alert("Erro", "E-mail ou senha incorretos.");
+      await login(emailLimpo, senhaLimpa);
+    } catch (erro) {
+      const mensagem =
+        erro?.response?.data?.erro ||
+        erro?.message ||
+        "E-mail ou senha incorretos.";
+      Alert.alert("Erro", mensagem);
     } finally {
       setCarregando(false);
     }

@@ -6,8 +6,8 @@ import { usePushRegistration } from "../hooks/usePushRegistration";
 const AuthContext = createContext({});
 
 // ─── Credenciais para desenvolvimento ────────────────────────
-// Troque para false quando a tela de login estiver funcionando
-const AUTO_LOGIN = true;
+// Login manual obrigatório quando o usuário estiver acessando a app.
+const AUTO_LOGIN = false;
 const AUTO_EMAIL = "felipe@teste.com";
 const AUTO_SENHA = "123456";
 // ─────────────────────────────────────────────────────────────
@@ -19,7 +19,6 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     async function carregar() {
       try {
-        // 1. Tenta usar token já salvo
         const token = await AsyncStorage.getItem("token");
         const usuarioSalvo = await AsyncStorage.getItem("usuario");
 
@@ -29,7 +28,8 @@ export function AuthProvider({ children }) {
           return;
         }
 
-        // 2. Se não tem token e AUTO_LOGIN está ativo, faz login automático
+        // Login automático apenas para ambiente de desenvolvimento, mas
+        // desativado por padrão para forçar a tela de autenticação real.
         if (AUTO_LOGIN) {
           const { data } = await api.post("/auth/login", {
             email: AUTO_EMAIL,
@@ -38,9 +38,12 @@ export function AuthProvider({ children }) {
           await AsyncStorage.setItem("token", data.token);
           await AsyncStorage.setItem("usuario", JSON.stringify(data.usuario));
           setUsuario(data.usuario);
+        } else {
+          setUsuario(null);
         }
       } catch (err) {
         console.error("Erro ao carregar sessão:", err);
+        setUsuario(null);
       } finally {
         setCarregando(false);
       }
@@ -51,10 +54,22 @@ export function AuthProvider({ children }) {
   usePushRegistration(usuario);
 
   async function login(email, senha) {
-    const { data } = await api.post("/auth/login", { email, senha });
+    const emailLimpo = String(email ?? "").trim().toLowerCase();
+    const senhaLimpa = String(senha ?? "").trim();
+
+    if (!emailLimpo || !senhaLimpa) {
+      throw new Error("E-mail e senha são obrigatórios.");
+    }
+
+    const { data } = await api.post("/auth/login", {
+      email: emailLimpo,
+      senha: senhaLimpa,
+    });
+
     await AsyncStorage.setItem("token", data.token);
     await AsyncStorage.setItem("usuario", JSON.stringify(data.usuario));
     setUsuario(data.usuario);
+    return data;
   }
 
   async function cadastro(dados) {
