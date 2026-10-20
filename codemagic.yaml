@@ -1,34 +1,26 @@
 workflows:
-  ios-release:
-    name: Valora iOS Release
-    max_build_duration: 60
+  react-native-ios:
+    name: Valora iOS Build
     environment:
-      vars:
-        EXPO_PUBLIC_SUPABASE_URL: ${EXPO_PUBLIC_SUPABASE_URL}
-        EXPO_PUBLIC_SUPABASE_ANON_KEY: ${EXPO_PUBLIC_SUPABASE_ANON_KEY}
-        EXPO_PUBLIC_API_BASE_URL: ${EXPO_PUBLIC_API_BASE_URL}
-      xcode: latest
+      groups:
+        - supabase
       node: 22
-      cocoapods: default
     scripts:
-      - name: Install dependencies
+      - name: Install npm dependencies
+        script: npm install
+      - name: Prebuild native iOS project
+        script: npx expo prebuild --platform ios
+      - name: Install CocoaPods dependencies
+        script: cd ios && pod install
+      - name: Build iOS app
         script: |
-          cd mobile
-          if [ -f yarn.lock ]; then yarn install --frozen-lockfile; else npm install; fi
-          cd ios
-          pod install --repo-update
-      - name: Build iOS archive
-        script: |
-          cd mobile
-          npx react-native bundle --platform ios --dev false --entry-file index.js --bundle-output ios/main.jsbundle --assets-dest ios
-          xcodebuild -workspace ios/ValoraMobile.xcworkspace \
-            -scheme ValoraMobile \
+          WORKSPACE=$(find ios -maxdepth 1 -name "*.xcworkspace")
+          SCHEME=$(xcodebuild -workspace "$WORKSPACE" -list | awk '/Schemes:/{flag=1;next}/^$/{flag=0}flag' | head -1 | xargs)
+          xcodebuild -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
             -configuration Release \
             -sdk iphoneos \
-            -archivePath build/ValoraMobile.xcarchive archive
-          xcodebuild -exportArchive \
-            -archivePath build/ValoraMobile.xcarchive \
-            -exportPath build/ipa \
-            -exportOptionsPlist ios/exportOptionsAdHoc.plist
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
     artifacts:
-      - /workspace/mobile/build/ipa/*.ipa
+      - build/**/*.app
