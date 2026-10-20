@@ -16,9 +16,8 @@ workflows:
       - name: Build iOS app
         script: |
           WORKSPACE=$(find ios -maxdepth 1 -name "*.xcworkspace")
-          SCHEME=$(xcodebuild -workspace "$WORKSPACE" -list | awk '/Schemes:/{flag=1;next}/^$/{flag=0}flag' | head -1 | xargs)
           xcodebuild -workspace "$WORKSPACE" \
-            -scheme "$SCHEME" \
+            -scheme "mobile" \
             -configuration Release \
             -sdk iphoneos \
             -derivedDataPath build \
