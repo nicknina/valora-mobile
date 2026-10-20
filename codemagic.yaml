@@ -22,9 +22,5 @@ workflows:
             -sdk iphoneos \
             -derivedDataPath build \
             CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
-      - name: Find app bundle
-        script: |
-          echo "Procurando arquivos .app..."
-          find build -name "*.app" -type d
     artifacts:
-      - mobile/build/Build/Products/Release-iphoneos/*.app
+      - build/Build/Products/Release-iphoneos/*.app
