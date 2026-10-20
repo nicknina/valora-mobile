@@ -1,4 +1,5 @@
 import { open } from '@op-engineering/op-sqlite';
+import felipeData from '../data/felipe-data.json';
 
 const DB_NAME = 'valora_local.db';
 let dbPromise = null;
@@ -71,6 +72,12 @@ const tableSchema = [
     nome_tabela TEXT PRIMARY KEY,
     ultima_sincronizacao TEXT
   );`,
+  `CREATE TABLE IF NOT EXISTS categoria (
+    id_categoria TEXT PRIMARY KEY,
+    nome TEXT,
+    tipo TEXT,
+    descricao TEXT
+  );`,
 ];
 
 function createId(prefix) {
@@ -101,6 +108,64 @@ function normalizarId(item, fallbackPrefix) {
 
 async function ensureSeeded() {
   const db = await getDb();
+  const { rows: importacaoExistente } = await db.executeAsync(
+    "SELECT nome_tabela FROM sync_meta WHERE nome_tabela = 'felipe_data_import_v1';",
+  );
+
+  if (!importacaoExistente?.length) {
+    await upsertLocalRows(
+      'categoria',
+      felipeData.categorias.map((item) => ({
+        id_categoria: item.id_categoria,
+        nome: item.nome,
+        tipo: item.tipo,
+        descricao: item.descricao || '',
+      })),
+      'id_categoria',
+    );
+    await upsertLocalRows(
+      'conta_financeira',
+      felipeData.contas.map((item) => ({
+        ...item,
+        saldo_inicial_configurado: item.saldo_inicial_configurado ? 1 : 0,
+      })),
+      'id_conta',
+    );
+    await upsertLocalRows(
+      'lancamento_financeiro',
+      felipeData.lancamentos,
+      'id_lancamento',
+    );
+    await upsertLocalRows('preco_mercado', felipeData.precos, 'id_preco');
+    await upsertLocalRows(
+      'nota_fiscal',
+      felipeData.notas.map((item) => ({
+        id_nota: item.id_nota,
+        id_mei: item.id_mei,
+        nome_cliente: item.nome_cliente,
+        data_venda: item.data_venda,
+        descricao: item.descricao,
+        arquivo_url: null,
+        arquivo_tipo: item.arquivo_tipo,
+        criado_em: item.criado_em,
+      })),
+      'id_nota',
+    );
+    await upsertLocalRows(
+      'alerta_financeiro',
+      felipeData.alertas.map((item) => ({
+        ...item,
+        ativo: item.ativo ? 1 : 0,
+      })),
+      'id_alerta',
+    );
+    await db.executeAsync(
+      "INSERT OR REPLACE INTO sync_meta (nome_tabela, ultima_sincronizacao) VALUES ('felipe_data_import_v1', ?);",
+      [new Date().toISOString()],
+    );
+    return;
+  }
+
   const { rows } = await db.executeAsync('SELECT COUNT(*) AS total FROM conta_financeira;');
   const total = Number(rows?.[0]?.total || 0);
 

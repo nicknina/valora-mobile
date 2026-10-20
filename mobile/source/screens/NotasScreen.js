@@ -77,6 +77,14 @@ export default function NotasScreen({ navigation }) {
   }
 
   async function abrirArquivo(url) {
+    if (!url) {
+      Alert.alert(
+        "Arquivo indisponível",
+        "O arquivo original não veio na exportação. Os dados da nota foram importados, mas o anexo precisa ser transferido separadamente.",
+      );
+      return;
+    }
+
     try {
       await Linking.openURL(url);
     } catch {
@@ -162,8 +170,14 @@ export default function NotasScreen({ navigation }) {
               style={s.botaoVer}
               onPress={() => abrirArquivo(item.arquivo_url)}
             >
-              <Ionicons name="eye-outline" size={14} color={AZUL} />
-              <Text style={s.botaoVerTexto}>Ver nota</Text>
+              <Ionicons
+                name={item.arquivo_url ? "eye-outline" : "alert-circle-outline"}
+                size={14}
+                color={AZUL}
+              />
+              <Text style={s.botaoVerTexto}>
+                {item.arquivo_url ? "Ver nota" : "Sem anexo local"}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => excluir(item.id_nota)}>

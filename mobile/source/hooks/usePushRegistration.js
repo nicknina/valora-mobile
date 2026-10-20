@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import api from '../services/api';
+import { LOCAL_ONLY_MODE } from '../services/appMode';
 
 /**
  * Registra o token de push (Expo) do dispositivo assim que
@@ -12,7 +13,7 @@ import api from '../services/api';
  */
 export function usePushRegistration(usuarioLogado) {
   useEffect(() => {
-    if (!usuarioLogado) return;
+    if (!usuarioLogado || LOCAL_ONLY_MODE) return;
 
     async function registrar() {
       if (!Device.isDevice) return; // simuladores/emuladores não recebem push

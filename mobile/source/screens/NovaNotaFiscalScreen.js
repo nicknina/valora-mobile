@@ -15,9 +15,11 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
+import * as FileSystem from "expo-file-system/legacy";
 import { Calendar } from "react-native-calendars";
 import { useSupabaseUpload } from "../hooks/useSupabaseUpload";
 import api from "../services/api";
+import { LOCAL_ONLY_MODE } from "../services/appMode";
 
 const AZUL = "#2660A4";
 const PRETO = "#050505";
@@ -80,11 +82,21 @@ export default function NovaNotaFiscalScreen({ navigation }) {
 
     setSalvando(true);
     try {
-      // 1. Faz upload do arquivo para o Supabase Storage
-      const arquivoUrl = await upload(arquivo);
+      let arquivoUrl;
+      if (LOCAL_ONLY_MODE) {
+        const diretorio = `${FileSystem.documentDirectory}notas/`;
+        await FileSystem.makeDirectoryAsync(diretorio, { intermediates: true });
+        const extensao = arquivo.tipo === "pdf" ? "pdf" : "jpg";
+        const destino = `${diretorio}${Date.now()}_${Math.random()
+          .toString(36)
+          .slice(2)}.${extensao}`;
+        await FileSystem.copyAsync({ from: arquivo.uri, to: destino });
+        arquivoUrl = destino;
+      } else {
+        arquivoUrl = await upload(arquivo);
+      }
       if (!arquivoUrl) throw new Error("Falha no upload do arquivo.");
 
-      // 2. Salva os dados no banco via API
       await api.post("/notas", {
         nome_cliente: nomeCliente.trim(),
         data_venda: dataVenda,

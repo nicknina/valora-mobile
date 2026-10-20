@@ -1,6 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initializeLocalDatabase, getLocalRows, removeLocalRow, upsertLocalRows } from './localDb';
+import { LOCAL_ONLY_MODE } from './appMode';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://10.0.2.2:3000';
 
@@ -137,6 +138,12 @@ function buildLocalAlertas() {
   return getLocalRows('alerta_financeiro').then((rows) => rows.sort((a, b) => String(b.criado_em || '').localeCompare(String(a.criado_em || ''))));
 }
 
+function buildLocalCategorias() {
+  return getLocalRows('categoria', 'nome').then((rows) =>
+    rows.sort((a, b) => String(a.nome).localeCompare(String(b.nome))),
+  );
+}
+
 function calcularDre(lancamentos) {
   const classificacoes = [
     'receita_bruta',
@@ -221,6 +228,7 @@ function getLocalDataForRoute(pathname, params = {}) {
   if (normalized === '/precos-medios') return buildLocalPrecos();
   if (normalized === '/notas') return buildLocalNotas(mergedParams);
   if (normalized === '/alertas') return buildLocalAlertas();
+  if (normalized === '/categorias') return buildLocalCategorias();
   if (normalized === '/relatorios/dre') return getLocalRows('lancamento_financeiro').then((rows) => calcularDre(rows));
   if (normalized === '/relatorios/fluxo-de-caixa') {
     return getLocalRows('lancamento_financeiro').then((rows) => {
@@ -369,6 +377,51 @@ async function persistLocalWrite(route, method, payload) {
     }
   }
 
+  if (route.startsWith('/precos-medios/') && method === 'DELETE') {
+    const id = route.split('/').pop();
+    await removeLocalRow('preco_mercado', 'id_preco', id);
+    return { mensagem: 'Removido deste iPhone', id };
+  }
+
+  if (route.startsWith('/notas/') && method === 'DELETE') {
+    const id = route.split('/').pop();
+    await removeLocalRow('nota_fiscal', 'id_nota', id);
+    return { mensagem: 'Removido deste iPhone', id };
+  }
+
+  if (route.startsWith('/alertas/') && method === 'DELETE') {
+    const id = route.split('/').pop();
+    await removeLocalRow('alerta_financeiro', 'id_alerta', id);
+    return { mensagem: 'Removido deste iPhone', id };
+  }
+
+  if (
+    route.startsWith('/alertas/') &&
+    route.endsWith('/ativar-desativar') &&
+    method === 'PATCH'
+  ) {
+    const id = route.split('/')[2];
+    const alertas = await getLocalRows('alerta_financeiro');
+    const alerta = alertas.find((item) => String(item.id_alerta) === id);
+    if (!alerta) throw new Error('Alerta não encontrado neste iPhone.');
+
+    const atualizado = {
+      ...alerta,
+      ativo: alerta.ativo ? 0 : 1,
+      atualizado_em: new Date().toISOString(),
+    };
+    await upsertLocalRows('alerta_financeiro', [atualizado], 'id_alerta');
+    return atualizado;
+  }
+
+  if (route.startsWith('/alertas/notificacoes/') && method === 'PATCH') {
+    return { mensagem: 'Notificações não estão disponíveis no modo local.' };
+  }
+
+  if (LOCAL_ONLY_MODE) {
+    throw new Error(`A operação ${method} ${route} não está disponível localmente.`);
+  }
+
   return payload;
 }
 
@@ -376,10 +429,18 @@ const originalGet = api.get.bind(api);
 const originalPost = api.post.bind(api);
 const originalPut = api.put.bind(api);
 const originalDelete = api.delete.bind(api);
+const originalPatch = api.patch.bind(api);
 
 api.get = async (url, config = {}) => {
   const params = typeof config === 'object' && config !== null ? config.params || parseQueryParams(url) : parseQueryParams(url);
   const localResult = await getLocalDataForRoute(url, params);
+
+  if (LOCAL_ONLY_MODE) {
+    if (localResult === null) {
+      throw new Error(`A consulta ${url} não está disponível localmente.`);
+    }
+    return { data: await localResult, status: 200, fromCache: true };
+  }
 
   if (localResult !== null) {
     void originalGet(url, config)
@@ -438,7 +499,11 @@ api.get = async (url, config = {}) => {
 };
 
 api.post = async (url, data, config = {}) => {
+  if (LOCAL_ONLY_MODE && url === '/alertas/verificar') {
+    return { data: { notificacoes_geradas: 0, notificacoes: [] }, status: 200, fromCache: true };
+  }
   const localResult = await persistLocalWrite(url, 'POST', data);
+  if (LOCAL_ONLY_MODE) return { data: localResult, status: 200, fromCache: true };
   void originalPost(url, data, config)
     .catch((error) => console.warn(`Erro silencioso em POST ${url}:`, error.message || error));
   return { data: localResult, status: 200, fromCache: true };
@@ -446,6 +511,7 @@ api.post = async (url, data, config = {}) => {
 
 api.put = async (url, data, config = {}) => {
   const localResult = await persistLocalWrite(url, 'PUT', data);
+  if (LOCAL_ONLY_MODE) return { data: localResult, status: 200, fromCache: true };
   void originalPut(url, data, config)
     .catch((error) => console.warn(`Erro silencioso em PUT ${url}:`, error.message || error));
   return { data: localResult, status: 200, fromCache: true };
@@ -453,9 +519,16 @@ api.put = async (url, data, config = {}) => {
 
 api.delete = async (url, config = {}) => {
   const localResult = await persistLocalWrite(url, 'DELETE', {});
+  if (LOCAL_ONLY_MODE) return { data: localResult, status: 200, fromCache: true };
   void originalDelete(url, config)
     .catch((error) => console.warn(`Erro silencioso em DELETE ${url}:`, error.message || error));
   return { data: localResult, status: 200, fromCache: true };
+};
+
+api.patch = async (url, data, config = {}) => {
+  const localResult = await persistLocalWrite(url, 'PATCH', data);
+  if (LOCAL_ONLY_MODE) return { data: localResult, status: 200, fromCache: true };
+  return originalPatch(url, data, config);
 };
 
 export default api;

@@ -12,6 +12,7 @@ import {
   Platform,
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
+import { LOCAL_DEMO_ACCOUNT, LOCAL_ONLY_MODE } from "../services/appMode";
 
 const AZUL = "#2660A4";
 const AMBAR = "#ECA400";
@@ -111,9 +112,22 @@ export default function LoginScreen({ navigation }) {
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => navigation.navigate("Cadastro")}>
-            <Text style={s.link}>Não tem conta? Cadastre-se</Text>
-          </TouchableOpacity>
+          {LOCAL_ONLY_MODE ? (
+            <>
+              <Text style={s.link}>
+                Acesso local: {LOCAL_DEMO_ACCOUNT.email} /{" "}
+                {LOCAL_DEMO_ACCOUNT.password}
+              </Text>
+              <Text style={s.avisoLocal}>
+                Seus dados ficam neste iPhone e não sincronizam com outros
+                dispositivos.
+              </Text>
+            </>
+          ) : (
+            <TouchableOpacity onPress={() => navigation.navigate("Cadastro")}>
+              <Text style={s.link}>Não tem conta? Cadastre-se</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -207,5 +221,12 @@ const s = StyleSheet.create({
     marginTop: 18,
     fontSize: 14,
     fontWeight: "600",
+  },
+  avisoLocal: {
+    color: "#64748B",
+    textAlign: "center",
+    marginTop: 10,
+    fontSize: 12,
+    lineHeight: 17,
   },
 });

@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import api from './api';
 import { initializeLocalDatabase, upsertLocalRows } from './localDb';
+import { LOCAL_ONLY_MODE } from './appMode';
 
 export async function isAppOnline() {
   const state = await NetInfo.fetch();
@@ -9,6 +10,8 @@ export async function isAppOnline() {
 }
 
 export async function syncAppStateToLocal() {
+  if (LOCAL_ONLY_MODE) return { synced: false, reason: 'local-only' };
+
   try {
     const online = await isAppOnline();
     if (!online) return { synced: false, reason: 'offline' };

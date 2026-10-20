@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
+import { LOCAL_ONLY_MODE } from '../services/appMode';
 
 export default function ConnectionStatus() {
   const [online, setOnline] = useState(true);
 
   useEffect(() => {
+    if (LOCAL_ONLY_MODE) return undefined;
+
     const unsubscribe = NetInfo.addEventListener((state) => {
       setOnline(Boolean(state.isConnected && state.isInternetReachable !== false));
     });
@@ -15,8 +18,10 @@ export default function ConnectionStatus() {
 
   return (
     <View style={styles.wrap} pointerEvents="none">
-      <View style={[styles.dot, online ? styles.dotOnline : styles.dotOffline]} />
-      <Text style={styles.label}>{online ? 'Online / sincronizado' : 'Offline / local'}</Text>
+      <View style={[styles.dot, !LOCAL_ONLY_MODE && online ? styles.dotOnline : styles.dotOffline]} />
+      <Text style={styles.label}>
+        {LOCAL_ONLY_MODE ? 'Somente neste iPhone' : online ? 'Online / sincronizado' : 'Offline / local'}
+      </Text>
     </View>
   );
 }
