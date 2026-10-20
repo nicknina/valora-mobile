@@ -17,7 +17,7 @@ workflows:
         script: |
           WORKSPACE=$(find ios -maxdepth 1 -name "*.xcworkspace")
           xcodebuild -workspace "$WORKSPACE" \
-            -scheme "mobile" \
+            -scheme "Valora" \
             -configuration Release \
             -sdk iphoneos \
             -derivedDataPath build \
@@ -25,7 +25,7 @@ workflows:
       - name: Package IPA
         script: |
           mkdir -p build/ipa/Payload
-          cp -r build/Build/Products/Release-iphoneos/mobile.app build/ipa/Payload/
+          cp -r build/Build/Products/Release-iphoneos/Valora.app build/ipa/Payload/
           cd build/ipa
           zip -r ../../valora.ipa Payload
     artifacts:
