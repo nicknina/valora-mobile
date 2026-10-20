@@ -29,4 +29,4 @@ workflows:
           cd build/ipa
           zip -r ../../valora.ipa Payload
     artifacts:
-      - mobile/valora.ipa
+      - valora.ipa
