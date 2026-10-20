@@ -1,7 +1,7 @@
 workflows:
   react-native-ios:
     name: Valora iOS Build
-    workking_directory: ./packages/mobile
+    working_directory: ./packages/mobile
     environment:
       groups:
         - supabase
