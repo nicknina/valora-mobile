@@ -22,5 +22,11 @@ workflows:
             -sdk iphoneos \
             -derivedDataPath build \
             CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+      - name: Package IPA
+        script: |
+          mkdir -p build/ipa/Payload
+          cp -r build/Build/Products/Release-iphoneos/mobile.app build/ipa/Payload/
+          cd build/ipa
+          zip -r ../../valora.ipa Payload
     artifacts:
-      - build/Build/Products/Release-iphoneos/*.app
+      - mobile/valora.ipa
