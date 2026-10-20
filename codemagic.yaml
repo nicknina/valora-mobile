@@ -8,7 +8,7 @@ workflows:
       node: 22
     scripts:
       - name: Install npm dependencies
-        script: npm install
+        script: npm install --legacy-peer-deps
       - name: Prebuild native iOS project
         script: npx expo prebuild --platform ios
       - name: Install CocoaPods dependencies
