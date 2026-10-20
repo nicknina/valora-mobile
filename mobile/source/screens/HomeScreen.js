@@ -12,6 +12,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { PieChart } from 'react-native-chart-kit';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import { formatCurrency } from '../utils/money';
 
 const LARGURA = Dimensions.get('window').width;
 const COR = '#0F766E';
@@ -62,7 +63,6 @@ export default function HomeScreen({ navigation }) { // FIX: recebe navigation
     }, [carregar])
   );
 
-  const fmt = (v) => `R$ ${(v ?? 0).toFixed(2).replace('.', ',')}`;
   const saldoPositivo = (resumo?.saldo ?? 0) >= 0;
   const saldoContas = contas.reduce(
     (total, conta) => total + Number(conta.saldo_atual || 0),
@@ -131,14 +131,14 @@ export default function HomeScreen({ navigation }) { // FIX: recebe navigation
               </View>
             </View>
 
-            <Text style={s.saldoValor}>{fmt(resumo?.saldo)}</Text>
+            <Text style={s.saldoValor}>{formatCurrency(resumo?.saldo)}</Text>
 
             <View style={s.saldoDivisor} />
 
             <View style={s.saldoRodape}>
               <View style={s.saldoMiniItem}>
                 <Text style={s.saldoMiniLabel}>Receitas</Text>
-                <Text style={s.saldoMiniValor}>{fmt(resumo?.totais?.receita)}</Text>
+                <Text style={s.saldoMiniValor}>{formatCurrency(resumo?.totais?.receita)}</Text>
               </View>
 
               <View style={s.saldoSeparador} />
@@ -146,7 +146,7 @@ export default function HomeScreen({ navigation }) { // FIX: recebe navigation
               <View style={s.saldoMiniItem}>
                 <Text style={s.saldoMiniLabel}>Saídas totais</Text>
                 <Text style={s.saldoMiniValor}>
-                  {fmt((resumo?.totais?.despesa || 0) + (resumo?.totais?.custo || 0))}
+                  {formatCurrency((resumo?.totais?.despesa || 0) + (resumo?.totais?.custo || 0))}
                 </Text>
               </View>
 
@@ -155,7 +155,7 @@ export default function HomeScreen({ navigation }) { // FIX: recebe navigation
               <View style={s.saldoMiniItem}>
                 <Text style={s.saldoMiniLabel}>Investimentos</Text>
                 <Text style={s.saldoMiniValor}>
-                  {fmt(resumo?.totais?.investimento || 0)}
+                  {formatCurrency(resumo?.totais?.investimento || 0)}
                 </Text>
               </View>
             </View>
@@ -200,7 +200,7 @@ export default function HomeScreen({ navigation }) { // FIX: recebe navigation
                           </Text>
                         </View>
 
-                        <Text style={s.legendaValor}>{fmt(item.population)}</Text>
+                        <Text style={s.legendaValor}>{formatCurrency(item.population)}</Text>
 
                         <View
                           style={[
@@ -240,13 +240,13 @@ export default function HomeScreen({ navigation }) { // FIX: recebe navigation
             onPress={() => navigation.navigate('Contas')}
             accessibilityRole="button"
             accessibilityLabel={saldoContasConfigurado
-              ? `Saldo atual nas contas: ${fmt(saldoContas)}. Abrir contas`
+              ? `Saldo atual nas contas: ${formatCurrency(saldoContas)}. Abrir contas`
               : 'Configure o saldo inicial das contas'}
           >
             <View style={s.contasSaldoInfo}>
               <Text style={s.contasSaldoLabel}>Saldo atual nas contas</Text>
               <Text style={s.contasSaldoValor}>
-                {saldoContasConfigurado ? fmt(saldoContas) : 'Configuração pendente'}
+                {saldoContasConfigurado ? formatCurrency(saldoContas) : 'Configuração pendente'}
               </Text>
               <Text style={s.contasSaldoAjuda}>
                 {saldoContasConfigurado

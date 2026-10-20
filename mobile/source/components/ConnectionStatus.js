@@ -16,11 +16,13 @@ export default function ConnectionStatus() {
     return () => unsubscribe && typeof unsubscribe === 'function' && unsubscribe();
   }, []);
 
+  if (LOCAL_ONLY_MODE) return null;
+
   return (
     <View style={styles.wrap} pointerEvents="none">
-      <View style={[styles.dot, !LOCAL_ONLY_MODE && online ? styles.dotOnline : styles.dotOffline]} />
+      <View style={[styles.dot, online ? styles.dotOnline : styles.dotOffline]} />
       <Text style={styles.label}>
-        {LOCAL_ONLY_MODE ? 'Somente neste iPhone' : online ? 'Online / sincronizado' : 'Offline / local'}
+        {online ? 'Online / sincronizado' : 'Offline / local'}
       </Text>
     </View>
   );

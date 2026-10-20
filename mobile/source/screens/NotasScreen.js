@@ -15,6 +15,7 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Calendar } from "react-native-calendars";
+import * as Sharing from "expo-sharing";
 import api from "../services/api";
 
 const AZUL = "#2660A4";
@@ -76,7 +77,7 @@ export default function NotasScreen({ navigation }) {
     setFiltroAberto(false);
   }
 
-  async function abrirArquivo(url) {
+  async function abrirArquivo(url, tipo) {
     if (!url) {
       Alert.alert(
         "Arquivo indisponível",
@@ -86,9 +87,21 @@ export default function NotasScreen({ navigation }) {
     }
 
     try {
+      if (url.startsWith("file://")) {
+        const disponivel = await Sharing.isAvailableAsync();
+        if (!disponivel) {
+          throw new Error("O compartilhamento de arquivos não está disponível.");
+        }
+        await Sharing.shareAsync(url, {
+          mimeType: tipo === "pdf" ? "application/pdf" : "image/jpeg",
+          dialogTitle: "Abrir nota fiscal",
+        });
+        return;
+      }
+
       await Linking.openURL(url);
     } catch {
-      Alert.alert("Erro", "Não foi possível abrir o arquivo.");
+      Alert.alert("Erro", "Não foi possível abrir ou compartilhar o arquivo.");
     }
   }
 
@@ -168,7 +181,7 @@ export default function NotasScreen({ navigation }) {
           <View style={s.cardAcoes}>
             <TouchableOpacity
               style={s.botaoVer}
-              onPress={() => abrirArquivo(item.arquivo_url)}
+              onPress={() => abrirArquivo(item.arquivo_url, item.arquivo_tipo)}
             >
               <Ionicons
                 name={item.arquivo_url ? "eye-outline" : "alert-circle-outline"}

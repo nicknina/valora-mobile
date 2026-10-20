@@ -14,6 +14,7 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import { LineChart } from "react-native-chart-kit";
 import api from "../services/api";
+import { formatCurrency } from "../utils/money";
 
 const AZUL = "#2660A4";
 const VERDE = "#23967F";
@@ -22,9 +23,6 @@ const FUNDO = "#EDF7F6";
 const LARGURA = Dimensions.get("window").width;
 
 const CATEGORIAS_FILTRO = ["Todos"];
-
-const fmt = (v) =>
-  `R$ ${(v ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 function variacao(historico) {
   if (!historico || historico.length < 2) return 0;
@@ -186,7 +184,7 @@ export default function PrecosMediosScreen({ navigation }) {
                 <View style={{ flex: 1 }}>
                   <Text style={s.graficoNome}>{produtoSelecionado.nome}</Text>
                   <Text style={s.graficoPreco}>
-                    {fmt(precoAtual)}
+                    {formatCurrency(precoAtual)}
                     <Text style={s.graficoUnidade}>
                       {" "}
                       / {produtoSelecionado.unidade}
@@ -272,7 +270,7 @@ export default function PrecosMediosScreen({ navigation }) {
                 ].map((item) => (
                   <View key={item.label} style={s.resumoItem}>
                     <Text style={s.resumoLabel}>{item.label}</Text>
-                    <Text style={s.resumoValor}>{fmt(item.valor)}</Text>
+                    <Text style={s.resumoValor}>{formatCurrency(item.valor)}</Text>
                   </View>
                 ))}
               </View>
@@ -291,7 +289,7 @@ export default function PrecosMediosScreen({ navigation }) {
                         .replace(". de ", "/")
                         .replace(".", "")}
                     </Text>
-                    <Text style={s.historicoValor}>{fmt(h.preco)}</Text>
+                    <Text style={s.historicoValor}>{formatCurrency(h.preco)}</Text>
                     <TouchableOpacity
                       onPress={() =>
                         excluirPreco(h.id_preco, produtoSelecionado.nome)
@@ -340,7 +338,7 @@ export default function PrecosMediosScreen({ navigation }) {
                 </View>
                 <View style={s.itemDireita}>
                   <Text style={[s.itemPreco, selecionado && { color: AZUL }]}>
-                    {fmt(prAtual)}
+                    {formatCurrency(prAtual)}
                   </Text>
                   {produto.historico.length >= 2 && (
                     <View

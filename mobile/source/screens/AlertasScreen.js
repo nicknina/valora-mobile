@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../services/api';
+import { formatCurrency, formatCurrencyInput, parseCurrencyInput } from '../utils/money';
 
 const AZUL     = '#2660A4';
 const AZUL_BG  = '#EDF7F6';
@@ -98,7 +99,7 @@ export default function AlertasScreen({ navigation }) { // FIX: recebe navigatio
       await api.post('/alertas', {
         tipo_alerta: tipoAlerta,
         descricao: descricao.trim() || descricaoPadrao(tipoAlerta),
-        valor_referencia: parseFloat(valor.replace(',', '.')),
+        valor_referencia: parseCurrencyInput(valor),
       });
       setDescricao(''); setValor(''); setTipoAlerta('limite_despesa');
       toggleForm(); carregar();
@@ -147,13 +148,6 @@ export default function AlertasScreen({ navigation }) { // FIX: recebe navigatio
     setNotificacoesNovas([]);
   }
 
-  function formatarValor(texto) {
-    const numeros = texto.replace(/\D/g, '');
-    if (!numeros) return '';
-    return (parseInt(numeros) / 100).toFixed(2).replace('.', ',');
-  }
-
-  const fmt = v => `R$ ${parseFloat(v).toFixed(2).replace('.', ',')}`;
   const ativos   = alertas.filter(a => a.ativo);
   const inativos = alertas.filter(a => !a.ativo);
   const alertaSelecionado = alertas.find(a => a.id_alerta === menuAberto);
@@ -180,7 +174,7 @@ export default function AlertasScreen({ navigation }) { // FIX: recebe navigatio
           </Text>
           <Text style={s.itemTipo}>{labelTipo(item.tipo_alerta)}</Text>
           <Text style={[s.itemLimite, { color: item.ativo ? AMBAR : '#94A3B8' }]}>
-            Limite: {fmt(item.valor_referencia)}
+            Limite: {formatCurrency(item.valor_referencia)}
           </Text>
         </View>
         <View style={s.itemDireita}>
@@ -321,7 +315,7 @@ export default function AlertasScreen({ navigation }) { // FIX: recebe navigatio
                       placeholder="0,00"
                       placeholderTextColor="#CBD5E1"
                       value={valor}
-                      onChangeText={v => setValor(formatarValor(v))}
+                      onChangeText={v => setValor(formatCurrencyInput(v))}
                       keyboardType="numeric"
                     />
                   </View>
@@ -389,7 +383,7 @@ export default function AlertasScreen({ navigation }) { // FIX: recebe navigatio
                       <View style={{ flex: 1 }}>
                         <Text style={s.sheetDescricao} numberOfLines={1}>{alertaSelecionado.descricao}</Text>
                         <Text style={[s.sheetLimite, { color: AMBAR }]}>
-                          Limite: {fmt(alertaSelecionado.valor_referencia)}
+                          Limite: {formatCurrency(alertaSelecionado.valor_referencia)}
                         </Text>
                       </View>
                     </View>

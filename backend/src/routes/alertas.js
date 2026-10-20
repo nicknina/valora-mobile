@@ -5,6 +5,12 @@ const { enviarPush } = require('../utils/expoPush');
 
 const router = express.Router();
 
+const formatarMoeda = (valor) =>
+  `R$ ${Number(valor).toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+
 // ─────────────────────────────────────────
 // Lógica central de verificação de alertas.
 // Reaproveitada pela rota /verificar (manual,
@@ -53,11 +59,7 @@ async function verificarAlertasDoMei(id_mei) {
     if (alerta.tipo_alerta === 'limite_despesa') {
       if (totalDespesasMes >= alerta.valor_referencia) {
         disparar = true;
-        mensagem = `⚠️ Suas despesas esse mês atingiram R$ ${totalDespesasMes
-          .toFixed(2)
-          .replace('.', ',')}, ultrapassando o limite de R$ ${parseFloat(alerta.valor_referencia)
-          .toFixed(2)
-          .replace('.', ',')}.`;
+        mensagem = `⚠️ Suas despesas esse mês atingiram ${formatarMoeda(totalDespesasMes)}, ultrapassando o limite de ${formatarMoeda(alerta.valor_referencia)}.`;
       }
     }
 
@@ -71,15 +73,7 @@ async function verificarAlertasDoMei(id_mei) {
         const percentualDoTeto = (totalFaturamentoAno / alerta.valor_referencia) * 100;
         const projecaoAnual = (totalFaturamentoAno / mesAtual) * 12;
 
-        mensagem = `📊 Até o mês ${mesAtual}, seu faturamento acumulado é R$ ${totalFaturamentoAno
-          .toFixed(2)
-          .replace('.', ',')} (${percentualDoTeto.toFixed(0)}% do teto anual do MEI de R$ ${parseFloat(
-          alerta.valor_referencia
-        )
-          .toFixed(2)
-          .replace('.', ',')}). No ritmo atual, projeção de fechamento do ano: R$ ${projecaoAnual
-          .toFixed(2)
-          .replace('.', ',')}.`;
+        mensagem = `📊 Até o mês ${mesAtual}, seu faturamento acumulado é ${formatarMoeda(totalFaturamentoAno)} (${percentualDoTeto.toFixed(0)}% do teto anual do MEI de ${formatarMoeda(alerta.valor_referencia)}). No ritmo atual, projeção de fechamento do ano: ${formatarMoeda(projecaoAnual)}.`;
       }
     }
 

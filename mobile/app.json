@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "mobile",
+    "name": "Valora",
     "slug": "mobile",
     "version": "1.0.0",
     "entryPoint": "./index.js",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/valora-icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -18,8 +18,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/valora-icon.png",
+        "backgroundColor": "#2D6F70"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.anonymous.mobile"

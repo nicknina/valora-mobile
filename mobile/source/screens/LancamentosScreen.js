@@ -15,6 +15,7 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import { Calendar } from "react-native-calendars";
 import api from "../services/api";
+import { formatCurrency } from "../utils/money";
 
 const AZUL = "#2660A4";
 const AMBAR = "#ECA400";
@@ -43,7 +44,6 @@ const LABELS = {
   custo: "Custo",
 };
 
-const fmt = (v) => `R$ ${(v ?? 0).toFixed(2).replace(".", ",")}`;
 const fmtData = (d) =>
   d ? new Date(d + "T12:00:00").toLocaleDateString("pt-BR") : null;
 
@@ -149,7 +149,7 @@ export default function LancamentosScreen({ navigation }) {
             </Text>
           </View>
           <Text style={[s.itemValor, { color: CORES[item.tipo] }]}>
-            {fmt(parseFloat(item.valor))}
+            {formatCurrency(item.valor)}
           </Text>
           <TouchableOpacity
             style={s.excluirBotao}
@@ -216,25 +216,25 @@ export default function LancamentosScreen({ navigation }) {
                 ]}
               >
                 <Text style={s.saldoLabel}>Saldo do período</Text>
-                <Text style={s.saldoValor}>{fmt(totais.saldo)}</Text>
+                <Text style={s.saldoValor}>{formatCurrency(totais.saldo)}</Text>
                 <View style={s.saldoDivisor} />
                 <View style={s.saldoRodape}>
                   <View style={s.saldoMini}>
                     <Text style={s.saldoMiniLabel}>Entradas</Text>
-                    <Text style={s.saldoMiniValor}>{fmt(totais.receita)}</Text>
+                    <Text style={s.saldoMiniValor}>{formatCurrency(totais.receita)}</Text>
                   </View>
                   <View style={s.saldoSep} />
                   <View style={s.saldoMini}>
                     <Text style={s.saldoMiniLabel}>Saídas</Text>
                     <Text style={s.saldoMiniValor}>
-                      {fmt(totais.despesa + totais.custo)}
+                      {formatCurrency(totais.despesa + totais.custo)}
                     </Text>
                   </View>
                   <View style={s.saldoSep} />
                   <View style={s.saldoMini}>
                     <Text style={s.saldoMiniLabel}>Investido</Text>
                     <Text style={s.saldoMiniValor}>
-                      {fmt(totais.investimento)}
+                      {formatCurrency(totais.investimento)}
                     </Text>
                   </View>
                 </View>
@@ -276,7 +276,7 @@ export default function LancamentosScreen({ navigation }) {
                       style={[s.miniCardDot, { backgroundColor: item.cor }]}
                     />
                     <Text style={[s.miniCardValor, { color: item.cor }]}>
-                      {fmt(item.valor)}
+                      {formatCurrency(item.valor)}
                     </Text>
                     <Text style={s.miniCardLabel}>{item.label}</Text>
                   </View>

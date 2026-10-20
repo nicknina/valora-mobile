@@ -16,6 +16,12 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import { Calendar } from "react-native-calendars";
 import api from "../services/api";
+import {
+  formatCurrency,
+  formatCurrencyInput,
+  formatCurrencyInputFromAmount,
+  parseCurrencyInput,
+} from "../utils/money";
 
 const AZUL = "#2660A4";
 const VERDE = "#16845B";
@@ -27,10 +33,6 @@ function dataLocal(data) {
   const mes = String(data.getMonth() + 1).padStart(2, "0");
   const dia = String(data.getDate()).padStart(2, "0");
   return `${ano}-${mes}-${dia}`;
-}
-
-function formatarMoeda(valor) {
-  return `R$ ${Number(valor || 0).toFixed(2).replace(".", ",")}`;
 }
 
 function formatarData(data) {
@@ -75,12 +77,12 @@ export default function ContasScreen({ navigation }) {
   function editar(conta) {
     setIdContaEditando(conta.id_conta);
     setNome(conta.nome);
-    setSaldoInicial(String(conta.saldo_inicial).replace(".", ","));
+    setSaldoInicial(formatCurrencyInputFromAmount(conta.saldo_inicial));
     setDataSaldoInicial(conta.data_saldo_inicial);
   }
 
   async function salvar() {
-    const saldo = Number(saldoInicial.replace(",", "."));
+    const saldo = parseCurrencyInput(saldoInicial);
     if (!nome.trim()) return Alert.alert("Atenção", "Informe o nome da conta.");
     if (!saldoInicial.trim() || !Number.isFinite(saldo)) {
       return Alert.alert("Atenção", "Informe um saldo inicial válido.");
@@ -137,7 +139,7 @@ export default function ContasScreen({ navigation }) {
               <Text style={s.totalLabel}>Saldo total atual</Text>
               <Text style={s.totalValor}>
                 {saldoConfigurado
-                  ? formatarMoeda(totalAtual)
+                  ? formatCurrency(totalAtual)
                   : "Configure o saldo inicial de cada conta"}
               </Text>
             </View>
@@ -163,7 +165,7 @@ export default function ContasScreen({ navigation }) {
                   placeholderTextColor="#94A3B8"
                   keyboardType="decimal-pad"
                   value={saldoInicial}
-                  onChangeText={setSaldoInicial}
+                  onChangeText={(value) => setSaldoInicial(formatCurrencyInput(value))}
                 />
               </View>
               <Text style={s.campoLabel}>Data em que esse saldo era válido</Text>
@@ -212,24 +214,24 @@ export default function ContasScreen({ navigation }) {
                     </View>
                     <Text style={s.contaSaldoAtual}>
                       {conta.saldo_inicial_configurado
-                        ? formatarMoeda(conta.saldo_atual)
+                        ? formatCurrency(conta.saldo_atual)
                         : "Saldo inicial pendente"}
                     </Text>
                     <Text style={s.contaBase}>
-                      Saldo inicial de {formatarData(conta.data_saldo_inicial)}: {formatarMoeda(conta.saldo_inicial)}
+                      Saldo inicial de {formatarData(conta.data_saldo_inicial)}: {formatCurrency(conta.saldo_inicial)}
                     </Text>
                     <View style={s.movimentosLinha}>
                       <View style={s.movimentoItem}>
                         <Text style={s.movimentoLabel}>Entradas</Text>
                         <Text style={[s.movimentoValor, { color: VERDE }]}>
-                          {formatarMoeda(conta.entradas)}
+                          {formatCurrency(conta.entradas)}
                         </Text>
                       </View>
                       <View style={s.divisor} />
                       <View style={s.movimentoItem}>
                         <Text style={s.movimentoLabel}>Saídas</Text>
                         <Text style={[s.movimentoValor, { color: VERMELHO }]}>
-                          {formatarMoeda(conta.saidas)}
+                          {formatCurrency(conta.saidas)}
                         </Text>
                       </View>
                     </View>

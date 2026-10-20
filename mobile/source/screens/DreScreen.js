@@ -13,6 +13,7 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import { Calendar } from "react-native-calendars";
 import api from "../services/api";
+import { formatCurrency } from "../utils/money";
 
 const AZUL = "#2660A4";
 const VERDE = "#16845B";
@@ -28,10 +29,6 @@ function dataLocal(data) {
 
 function formatarData(data) {
   return data ? new Date(`${data}T12:00:00`).toLocaleDateString("pt-BR") : "";
-}
-
-function formatarMoeda(valor) {
-  return `R$ ${Number(valor || 0).toFixed(2).replace(".", ",")}`;
 }
 
 export default function DreScreen() {
@@ -74,7 +71,7 @@ export default function DreScreen() {
           <View key={item.categoria} style={s.categoriaLinha}>
             <Text style={s.categoriaNome}>{item.categoria}</Text>
             <Text style={[s.categoriaValor, { color: cor }]}>
-              {formatarMoeda(item.total)}
+              {formatCurrency(item.total)}
             </Text>
           </View>
         ))
@@ -143,7 +140,7 @@ export default function DreScreen() {
             >
               <Text style={s.resultadoLabel}>Lucro líquido do período</Text>
               <Text style={s.resultadoValor}>
-                {formatarMoeda(dre.lucro_liquido)}
+                {formatCurrency(dre.lucro_liquido)}
               </Text>
               <Text style={s.margem}>
                 Margem líquida: {Number(dre.margem_liquida_percentual || 0)
@@ -157,35 +154,35 @@ export default function DreScreen() {
               <View style={s.linha}>
                 <Text style={s.linhaLabel}>Receita bruta</Text>
                 <Text style={[s.linhaValor, { color: VERDE }]}>
-                  {formatarMoeda(dre.receita_bruta)}
+                  {formatCurrency(dre.receita_bruta)}
                 </Text>
               </View>
               <View style={s.linha}>
                 <Text style={s.linhaLabel}>(-) Deduções da receita</Text>
                 <Text style={[s.linhaValor, { color: VERMELHO }]}>
-                  {formatarMoeda(dre.deducoes_receita)}
+                  {formatCurrency(dre.deducoes_receita)}
                 </Text>
               </View>
               <View style={[s.linha, s.subtotal]}>
                 <Text style={s.subtotalLabel}>(=) Receita líquida</Text>
                 <Text style={s.subtotalValor}>
-                  {formatarMoeda(dre.receita_liquida)}
+                  {formatCurrency(dre.receita_liquida)}
                 </Text>
               </View>
               <View style={s.linha}>
                 <Text style={s.linhaLabel}>(-) Custos dos produtos/serviços</Text>
                 <Text style={[s.linhaValor, { color: VERMELHO }]}>
-                  {formatarMoeda(dre.custos)}
+                  {formatCurrency(dre.custos)}
                 </Text>
               </View>
               <View style={[s.linha, s.subtotal]}>
                 <Text style={s.subtotalLabel}>(=) Lucro bruto</Text>
-                <Text style={s.subtotalValor}>{formatarMoeda(dre.lucro_bruto)}</Text>
+                <Text style={s.subtotalValor}>{formatCurrency(dre.lucro_bruto)}</Text>
               </View>
               <View style={s.linha}>
                 <Text style={s.linhaLabel}>(-) Despesas operacionais</Text>
                 <Text style={[s.linhaValor, { color: VERMELHO }]}>
-                  {formatarMoeda(dre.despesas_operacionais)}
+                  {formatCurrency(dre.despesas_operacionais)}
                 </Text>
               </View>
               <View style={[s.linha, s.subtotal]}>
@@ -193,19 +190,19 @@ export default function DreScreen() {
                   (=) Resultado operacional antes do resultado financeiro e dos tributos
                 </Text>
                 <Text style={s.subtotalValor}>
-                  {formatarMoeda(dre.resultado_operacional)}
+                  {formatCurrency(dre.resultado_operacional)}
                 </Text>
               </View>
               <View style={s.linha}>
                 <Text style={s.linhaLabel}>(+) Receitas financeiras</Text>
                 <Text style={[s.linhaValor, { color: VERDE }]}>
-                  {formatarMoeda(dre.receitas_financeiras)}
+                  {formatCurrency(dre.receitas_financeiras)}
                 </Text>
               </View>
               <View style={s.linha}>
                 <Text style={s.linhaLabel}>(-) Despesas financeiras</Text>
                 <Text style={[s.linhaValor, { color: VERMELHO }]}>
-                  {formatarMoeda(dre.despesas_financeiras)}
+                  {formatCurrency(dre.despesas_financeiras)}
                 </Text>
               </View>
               <View style={[s.linha, s.subtotal]}>
@@ -213,13 +210,13 @@ export default function DreScreen() {
                   (=) Resultado antes dos impostos sobre o lucro
                 </Text>
                 <Text style={s.subtotalValor}>
-                  {formatarMoeda(dre.resultado_antes_impostos)}
+                  {formatCurrency(dre.resultado_antes_impostos)}
                 </Text>
               </View>
               <View style={s.linha}>
                 <Text style={s.linhaLabel}>(-) Impostos sobre o lucro</Text>
                 <Text style={[s.linhaValor, { color: VERMELHO }]}>
-                  {formatarMoeda(dre.impostos_sobre_lucro)}
+                  {formatCurrency(dre.impostos_sobre_lucro)}
                 </Text>
               </View>
               <View style={[s.linha, s.totalLinha]}>
@@ -230,7 +227,7 @@ export default function DreScreen() {
                     { color: dre.lucro_liquido >= 0 ? VERDE : VERMELHO },
                   ]}
                 >
-                  {formatarMoeda(dre.lucro_liquido)}
+                  {formatCurrency(dre.lucro_liquido)}
                 </Text>
               </View>
             </View>

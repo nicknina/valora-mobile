@@ -15,6 +15,11 @@ import {
 import { Calendar } from "react-native-calendars";
 import { useFocusEffect } from "@react-navigation/native";
 import api from "../services/api";
+import {
+  formatCurrency,
+  formatCurrencyInput,
+  parseCurrencyInput,
+} from "../utils/money";
 
 // Tipos financeiros normais
 const TIPOS = [
@@ -97,15 +102,8 @@ function classificacaoPadrao(tipo) {
   }[tipo];
 }
 
-function formatarValor(texto) {
-  const numeros = texto.replace(/\D/g, "");
-  if (!numeros) return "";
-  const valor = (parseInt(numeros, 10) / 100).toFixed(2);
-  return valor.replace(".", ",");
-}
-
 function valorParaNumero(texto) {
-  return parseFloat((texto || "0").replace(",", "."));
+  return parseCurrencyInput(texto);
 }
 
 function formatarDataExtenso(data) {
@@ -415,7 +413,7 @@ export default function NovoLancamentoScreen({ navigation, route }) {
               placeholder="0,00"
               placeholderTextColor="#CBD5E1"
               value={valor}
-              onChangeText={(t) => setValor(formatarValor(t))}
+              onChangeText={(t) => setValor(formatCurrencyInput(t))}
               keyboardType="numeric"
             />
           </View>
@@ -493,12 +491,10 @@ export default function NovoLancamentoScreen({ navigation, route }) {
                   {contas.find((conta) => conta.id_conta === idConta)
                     ?.saldo_inicial_configurado ? (
                     <Text style={s.contaSaldo}>
-                      Saldo atual: R$ {Number(
+                      Saldo atual: {formatCurrency(
                         contas.find((conta) => conta.id_conta === idConta)
                           ?.saldo_atual ?? 0,
-                      )
-                        .toFixed(2)
-                        .replace(".", ",")}
+                      )}
                     </Text>
                   ) : (
                     <View>
