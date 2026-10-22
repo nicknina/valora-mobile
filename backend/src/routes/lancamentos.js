@@ -5,12 +5,11 @@ const { autenticar } = require('../middleware/auth');
 const router = express.Router();
 router.use(autenticar);
 
-const CLASSIFICACOES_POR_TIPO = {
-  receita: ['receita_bruta', 'receita_financeira'],
-  despesa: ['deducao_receita', 'despesa_operacional', 'despesa_financeira', 'imposto_lucro'],
-  custo: ['custo'],
-  investimento: ['investimento'],
-};
+const TIPOS_VALIDOS = ['receita', 'gasto', 'investimento', 'despesa', 'custo'];
+
+function normalizarTipo(tipo) {
+  return tipo === 'despesa' || tipo === 'custo' ? 'gasto' : tipo;
+}
 
 // GET /lancamentos
 router.get('/', async (req, res) => {
@@ -71,6 +70,7 @@ router.post('/', async (req, res) => {
     id_categoria,
     id_conta,
     classificacao_dre,
+    parcelas,
   } = req.body;
   const id_mei = req.usuario.id_mei;
 
@@ -78,11 +78,12 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ erro: 'Campos obrigatórios: tipo, valor, data_lancamento.' });
   }
 
-  if (!['receita', 'despesa', 'investimento', 'custo'].includes(tipo)) {
-    return res.status(400).json({ erro: 'Tipo inválido. Use: receita, despesa, investimento ou custo.' });
+  const tipoNormalizado = normalizarTipo(tipo);
+  if (!TIPOS_VALIDOS.includes(tipoNormalizado)) {
+    return res.status(400).json({ erro: 'Tipo inválido. Use: receita, gasto, investimento, despesa ou custo.' });
   }
-  if (!id_conta || !CLASSIFICACOES_POR_TIPO[tipo]?.includes(classificacao_dre)) {
-    return res.status(400).json({ erro: 'Selecione uma conta e uma classificação DRE compatível com o tipo.' });
+  if (!id_conta) {
+    return res.status(400).json({ erro: 'Selecione uma conta válida.' });
   }
 
   try {
@@ -96,23 +97,33 @@ router.post('/', async (req, res) => {
     if (erroConta) throw erroConta;
     if (!conta) return res.status(400).json({ erro: 'Conta inválida.' });
 
-    const { data, error } = await supabase
-      .from('lancamento_financeiro')
-      .insert({
+    const parcelasTotais = Number(parcelas) > 1 ? Number(parcelas) : 1;
+    const valorNumerico = Number(valor);
+    const valorParcela = parcelasTotais > 1 ? Number((valorNumerico / parcelasTotais).toFixed(2)) : valorNumerico;
+
+    const registros = [];
+    for (let indice = 0; indice < parcelasTotais; indice += 1) {
+      const dataParcela = new Date(`${data_lancamento}T12:00:00`);
+      const dataMes = new Date(dataParcela.getFullYear(), dataParcela.getMonth() + indice, dataParcela.getDate());
+      registros.push({
         id_mei,
-        tipo,
-        valor,
-        data_lancamento,
+        tipo: tipoNormalizado,
+        valor: indice === parcelasTotais - 1 ? Number((valorNumerico - (valorParcela * (parcelasTotais - 1))).toFixed(2)) : valorParcela,
+        data_lancamento: dataMes.toISOString().slice(0, 10),
         descricao,
         id_categoria,
         id_conta,
         classificacao_dre,
-      })
-      .select()
-      .single();
+      });
+    }
+
+    const { data, error } = await supabase
+      .from('lancamento_financeiro')
+      .insert(registros)
+      .select();
 
     if (error) throw error;
-    return res.status(201).json(data);
+    return res.status(201).json(parcelasTotais > 1 ? data : data[0]);
   } catch (err) {
     return res.status(500).json({ erro: 'Erro ao criar lançamento.' });
   }
@@ -142,10 +153,6 @@ router.put('/:id', async (req, res) => {
 
     if (!existente) return res.status(404).json({ erro: 'Lançamento não encontrado.' });
 
-    if (tipo && !CLASSIFICACOES_POR_TIPO[tipo]?.includes(classificacao_dre)) {
-      return res.status(400).json({ erro: 'Classificação DRE incompatível com o tipo.' });
-    }
-
     if (id_conta) {
       const { data: conta, error: erroConta } = await supabase
         .from('conta_financeira')
@@ -158,10 +165,11 @@ router.put('/:id', async (req, res) => {
       if (!conta) return res.status(400).json({ erro: 'Conta inválida.' });
     }
 
+    const tipoNormalizado = tipo ? normalizarTipo(tipo) : undefined;
     const { data, error } = await supabase
       .from('lancamento_financeiro')
       .update({
-        tipo,
+        tipo: tipoNormalizado ?? tipo,
         valor,
         data_lancamento,
         descricao,

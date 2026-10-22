@@ -114,17 +114,26 @@ router.get('/fluxo-de-caixa', async (req, res) => {
       .lte('data_lancamento', data_fim)
       .order('id_lancamento'));
 
-    const totais = { receita: 0, despesa: 0, investimento: 0, custo: 0 };
-    lancamentos.forEach((l) => { totais[l.tipo] += parseFloat(l.valor); });
+    const totais = { receita: 0, gasto: 0, investimento: 0, despesa: 0, custo: 0 };
+    lancamentos.forEach((l) => {
+      const valor = parseFloat(l.valor) || 0;
+      const tipo = l.tipo === 'despesa' || l.tipo === 'custo' ? 'gasto' : l.tipo;
+      totais[tipo] = (totais[tipo] || 0) + valor;
+      if (l.tipo === 'despesa') totais.despesa += valor;
+      if (l.tipo === 'custo') totais.custo += valor;
+    });
 
-    // FIX: custo estava sendo ignorado no cálculo do saldo
-    const saldo = totais.receita - totais.despesa - totais.custo - totais.investimento;
+    const saldo = totais.receita - totais.gasto - totais.investimento;
 
     const porMes = {};
     lancamentos.forEach((l) => {
       const mes = l.data_lancamento.substring(0, 7);
-      if (!porMes[mes]) porMes[mes] = { receita: 0, despesa: 0, investimento: 0, custo: 0 };
-      porMes[mes][l.tipo] += parseFloat(l.valor);
+      if (!porMes[mes]) porMes[mes] = { receita: 0, gasto: 0, investimento: 0, despesa: 0, custo: 0 };
+      const valor = parseFloat(l.valor) || 0;
+      const tipo = l.tipo === 'despesa' || l.tipo === 'custo' ? 'gasto' : l.tipo;
+      porMes[mes][tipo] = (porMes[mes][tipo] || 0) + valor;
+      if (l.tipo === 'despesa') porMes[mes].despesa += valor;
+      if (l.tipo === 'custo') porMes[mes].custo += valor;
     });
 
     const resultado = {

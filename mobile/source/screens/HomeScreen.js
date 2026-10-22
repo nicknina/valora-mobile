@@ -21,10 +21,13 @@ const COR_TEXTO = '#115E59';
 
 const CATEGORIAS = [
   { key: 'receita', nome: 'Receitas', cor: '#16A34A', bg: '#DCFCE7', textoCor: '#166534' },
-  { key: 'despesa', nome: 'Despesas', cor: '#DC2626', bg: '#FEE2E2', textoCor: '#991B1B' },
-  { key: 'custo', nome: 'Custos', cor: '#9333EA', bg: '#F3E8FF', textoCor: '#6B21A8' },
-  { key: 'investimento', nome: 'Investimentos', cor: '#CA8A04', bg: '#FEF3C7', textoCor: '#92400E' },
+  { key: 'gasto', nome: 'Gastos', cor: '#DC2626', bg: '#FEE2E2', textoCor: '#991B1B' },
+  { key: 'investimento', nome: 'Compras para empresa', cor: '#CA8A04', bg: '#FEF3C7', textoCor: '#92400E' },
 ];
+
+function normalizarTipo(tipo) {
+  return tipo === 'despesa' || tipo === 'custo' ? 'gasto' : tipo;
+}
 
 export default function HomeScreen({ navigation }) { // FIX: recebe navigation
   const { usuario, logout } = useAuth();
@@ -74,7 +77,9 @@ export default function HomeScreen({ navigation }) { // FIX: recebe navigation
   const dadosGrafico = CATEGORIAS
     .map((cat) => ({
       name: cat.nome,
-      population: resumo?.totais?.[cat.key] || 0,
+      population: cat.key === 'gasto'
+        ? (resumo?.totais?.gasto ?? (resumo?.totais?.despesa || 0) + (resumo?.totais?.custo || 0))
+        : resumo?.totais?.[cat.key] || 0,
       color: cat.cor,
       legendFontColor: '#1E293B',
       legendFontSize: 12,
@@ -144,16 +149,16 @@ export default function HomeScreen({ navigation }) { // FIX: recebe navigation
               <View style={s.saldoSeparador} />
 
               <View style={s.saldoMiniItem}>
-                <Text style={s.saldoMiniLabel}>Saídas totais</Text>
+                <Text style={s.saldoMiniLabel}>Gastos</Text>
                 <Text style={s.saldoMiniValor}>
-                  {formatCurrency((resumo?.totais?.despesa || 0) + (resumo?.totais?.custo || 0))}
+                  {formatCurrency(resumo?.totais?.gasto || 0)}
                 </Text>
               </View>
 
               <View style={s.saldoSeparador} />
 
               <View style={s.saldoMiniItem}>
-                <Text style={s.saldoMiniLabel}>Investimentos</Text>
+                <Text style={s.saldoMiniLabel}>Compras para empresa</Text>
                 <Text style={s.saldoMiniValor}>
                   {formatCurrency(resumo?.totais?.investimento || 0)}
                 </Text>

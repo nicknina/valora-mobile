@@ -27,34 +27,40 @@ const ROXO = "#7C3AED";
 
 const CORES = {
   receita: VERDE,
-  despesa: VERMELHO,
+  gasto: VERMELHO,
   investimento: AMBAR,
-  custo: ROXO,
 };
 const CORES_BG = {
   receita: "#ECFDF5",
-  despesa: "#FEE2E2",
+  gasto: "#FEE2E2",
   investimento: "#FFF8E6",
-  custo: "#F5F3FF",
 };
 const LABELS = {
   receita: "Receita",
-  despesa: "Despesa",
-  investimento: "Investimento",
-  custo: "Custo",
+  gasto: "Gasto",
+  investimento: "Gasto em compras para empresa",
 };
+
+function normalizarTipo(tipo) {
+  return tipo === 'despesa' || tipo === 'custo' ? 'gasto' : tipo;
+}
 
 const fmtData = (d) =>
   d ? new Date(d + "T12:00:00").toLocaleDateString("pt-BR") : null;
 
 function calcularTotais(lancamentos) {
-  const totais = { receita: 0, despesa: 0, custo: 0, investimento: 0 };
+  const totais = { receita: 0, gasto: 0, investimento: 0 };
   lancamentos.forEach((l) => {
-    totais[l.tipo] += parseFloat(l.valor);
+    const tipo = normalizarTipo(l.tipo);
+    if (tipo === 'gasto') {
+      totais.gasto += parseFloat(l.valor || 0);
+      return;
+    }
+    totais[tipo] = (totais[tipo] || 0) + parseFloat(l.valor || 0);
   });
   return {
     ...totais,
-    saldo: totais.receita - totais.despesa - totais.custo - totais.investimento,
+    saldo: totais.receita - totais.gasto - totais.investimento,
   };
 }
 
@@ -120,17 +126,18 @@ export default function LancamentosScreen({ navigation }) {
 
   function renderItem({ item }) {
     const isExcluindo = excluindo === item.id_lancamento;
+    const tipoExibicao = normalizarTipo(item.tipo);
     return (
       <View style={s.item}>
-        <View style={[s.itemAccent, { backgroundColor: CORES[item.tipo] }]} />
-        <View style={[s.itemIcone, { backgroundColor: CORES_BG[item.tipo] }]}>
+        <View style={[s.itemAccent, { backgroundColor: CORES[tipoExibicao] }]} />
+        <View style={[s.itemIcone, { backgroundColor: CORES_BG[tipoExibicao] }]}>
           <View
-            style={[s.itemIconeDot, { backgroundColor: CORES[item.tipo] }]}
+            style={[s.itemIconeDot, { backgroundColor: CORES[tipoExibicao] }]}
           />
         </View>
         <View style={s.itemInfo}>
           <Text style={s.itemDesc}>
-            {item.descricao || item.categoria?.nome || LABELS[item.tipo]}
+            {item.descricao || item.categoria?.nome || LABELS[tipoExibicao]}
           </Text>
           <Text style={s.itemCategoria}>{item.categoria?.nome}</Text>
           <Text style={s.itemConta}>
@@ -143,12 +150,12 @@ export default function LancamentosScreen({ navigation }) {
           </Text>
         </View>
         <View style={s.itemDireita}>
-          <View style={[s.tipoPill, { backgroundColor: CORES_BG[item.tipo] }]}>
-            <Text style={[s.tipoTexto, { color: CORES[item.tipo] }]}>
-              {LABELS[item.tipo]}
+          <View style={[s.tipoPill, { backgroundColor: CORES_BG[tipoExibicao] }]}>
+            <Text style={[s.tipoTexto, { color: CORES[tipoExibicao] }]}>
+              {LABELS[tipoExibicao]}
             </Text>
           </View>
-          <Text style={[s.itemValor, { color: CORES[item.tipo] }]}>
+          <Text style={[s.itemValor, { color: CORES[tipoExibicao] }]}>
             {formatCurrency(item.valor)}
           </Text>
           <TouchableOpacity
@@ -225,14 +232,14 @@ export default function LancamentosScreen({ navigation }) {
                   </View>
                   <View style={s.saldoSep} />
                   <View style={s.saldoMini}>
-                    <Text style={s.saldoMiniLabel}>Saídas</Text>
+                    <Text style={s.saldoMiniLabel}>Gastos</Text>
                     <Text style={s.saldoMiniValor}>
-                      {formatCurrency(totais.despesa + totais.custo)}
+                      {formatCurrency(totais.gasto)}
                     </Text>
                   </View>
                   <View style={s.saldoSep} />
                   <View style={s.saldoMini}>
-                    <Text style={s.saldoMiniLabel}>Investido</Text>
+                    <Text style={s.saldoMiniLabel}>Compras</Text>
                     <Text style={s.saldoMiniValor}>
                       {formatCurrency(totais.investimento)}
                     </Text>
@@ -250,19 +257,13 @@ export default function LancamentosScreen({ navigation }) {
                     bg: "#ECFDF5",
                   },
                   {
-                    label: "Despesas",
-                    valor: totais.despesa,
+                    label: "Gastos",
+                    valor: totais.gasto,
                     cor: VERMELHO,
                     bg: "#FEE2E2",
                   },
                   {
-                    label: "Custos",
-                    valor: totais.custo,
-                    cor: ROXO,
-                    bg: "#F5F3FF",
-                  },
-                  {
-                    label: "Investido",
+                    label: "Compras",
                     valor: totais.investimento,
                     cor: AMBAR,
                     bg: "#FFF8E6",

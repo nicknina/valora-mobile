@@ -24,13 +24,17 @@ import {
 // Tipos financeiros normais
 const TIPOS = [
   { key: "receita", label: "Receita", cor: "#16A34A", bg: "#DCFCE7" },
-  { key: "despesa", label: "Despesa", cor: "#DC2626", bg: "#FEE2E2" },
-  { key: "custo", label: "Custo", cor: "#9333EA", bg: "#F3E8FF" },
-  { key: "investimento", label: "Investimento", cor: "#CA8A04", bg: "#FEF3C7" },
+  { key: "gasto", label: "Gasto", cor: "#DC2626", bg: "#FEE2E2" },
+  {
+    key: "investimento",
+    label: "Gasto em compras para empresa",
+    cor: "#CA8A04",
+    bg: "#FEF3C7",
+  },
   { key: "saldo_inicial", label: "Saldo inicial", cor: "#2660A4", bg: "#DBEAFE" },
   {
     key: "preco_mercado",
-    label: "Preço Mercado",
+    label: "Histórico de materiais",
     cor: "#2660A4",
     bg: "#EDF7F6",
   },
@@ -70,36 +74,8 @@ const CATEGORIAS_PRECO = [
   "Outros",
 ];
 
-const CLASSIFICACOES_DRE = {
-  receita_bruta: "Receita bruta",
-  deducao_receita: "Dedução da receita",
-  custo: "Custo das vendas/serviços",
-  despesa_operacional: "Despesa operacional",
-  receita_financeira: "Receita financeira",
-  despesa_financeira: "Despesa financeira",
-  imposto_lucro: "Imposto sobre o lucro",
-  investimento: "Fora do DRE (investimento)",
-};
-
-const CLASSIFICACOES_POR_TIPO = {
-  receita: ["receita_bruta", "receita_financeira"],
-  despesa: [
-    "deducao_receita",
-    "despesa_operacional",
-    "despesa_financeira",
-    "imposto_lucro",
-  ],
-  custo: ["custo"],
-  investimento: ["investimento"],
-};
-
-function classificacaoPadrao(tipo) {
-  return {
-    receita: "receita_bruta",
-    despesa: "despesa_operacional",
-    custo: "custo",
-    investimento: "investimento",
-  }[tipo];
+function normalizarTipo(tipo) {
+  return tipo === "despesa" || tipo === "custo" ? "gasto" : tipo;
 }
 
 function valorParaNumero(texto) {
@@ -123,13 +99,11 @@ export default function NovoLancamentoScreen({ navigation, route }) {
   const [valor, setValor] = useState("");
   const [data, setData] = useState("");
   const [descricao, setDescricao] = useState("");
+  const [parcelas, setParcelas] = useState(1);
   const [categorias, setCategorias] = useState([]);
   const [contas, setContas] = useState([]);
   const [idCategoria, setIdCategoria] = useState(null);
   const [idConta, setIdConta] = useState(route?.params?.idContaInicial ?? null);
-  const [classificacaoDre, setClassificacaoDre] = useState(
-    classificacaoPadrao(tipoInicial),
-  );
   const [carregando, setCarregando] = useState(false);
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
 
@@ -171,7 +145,13 @@ export default function NovoLancamentoScreen({ navigation, route }) {
   );
 
   const categoriasFiltradas = useMemo(
-    () => categorias.filter((c) => c.tipo === tipo),
+    () => {
+      const tiposAceitos =
+        tipo === "gasto"
+          ? ["gasto", "despesa", "custo"]
+          : [tipo];
+      return categorias.filter((c) => tiposAceitos.includes(c.tipo));
+    },
     [categorias, tipo],
   );
 
@@ -180,9 +160,9 @@ export default function NovoLancamentoScreen({ navigation, route }) {
   );
 
   function trocarTipo(novoTipo) {
-    setTipo(novoTipo);
+    setTipo(normalizarTipo(novoTipo));
     setIdCategoria(null);
-    setClassificacaoDre(classificacaoPadrao(novoTipo));
+    setParcelas(1);
   }
 
   async function salvar() {
@@ -219,22 +199,49 @@ export default function NovoLancamentoScreen({ navigation, route }) {
           data_referencia: data,
         });
       } else {
-        // Salva na tabela lancamento_financeiro
         const contaSelecionada = contas.find((conta) => conta.id_conta === idConta);
         if (!contaSelecionada)
           return Alert.alert("Atenção", "Selecione ou cadastre uma conta.");
         if (!idCategoria)
-          return Alert.alert("Atenção", "Selecione uma categoria.");
+          return Alert.alert("Atenção", "Selecione ou cadastre uma categoria.");
 
-        await api.post("/lancamentos", {
-          tipo,
-          classificacao_dre: classificacaoDre,
+        const valorTotal = valorParaNumero(valor);
+        const parcelasTotal = Number(parcelas) > 1 ? Number(parcelas) : 1;
+        const payloadBase = {
+          tipo: normalizarTipo(tipo),
           id_conta: idConta,
-          valor: valorParaNumero(valor),
+          valor: valorTotal,
           data_lancamento: data,
           descricao: descricao.trim(),
           id_categoria: idCategoria,
-        });
+        };
+
+        if (parcelasTotal > 1) {
+          const valorParcela = Number((valorTotal / parcelasTotal).toFixed(2));
+          const primeiraData = new Date(`${data}T12:00:00`);
+          const promessas = Array.from({ length: parcelasTotal }, (_, indice) => {
+            const dataParcela = new Date(
+              primeiraData.getFullYear(),
+              primeiraData.getMonth() + indice,
+              primeiraData.getDate(),
+            );
+            const valorFinal =
+              indice === parcelasTotal - 1
+                ? Number((valorTotal - valorParcela * (parcelasTotal - 1)).toFixed(2))
+                : valorParcela;
+
+            return api.post("/lancamentos", {
+              ...payloadBase,
+              valor: valorFinal,
+              data_lancamento: dataParcela.toISOString().slice(0, 10),
+              parcelas: parcelasTotal,
+            });
+          });
+
+          await Promise.all(promessas);
+        } else {
+          await api.post("/lancamentos", payloadBase);
+        }
       }
       navigation.goBack();
     } catch {
@@ -257,14 +264,14 @@ export default function NovoLancamentoScreen({ navigation, route }) {
         <View style={s.headerCentro}>
           <Text style={s.headerTitulo}>
             {isPreco
-              ? "Registrar Preço"
+              ? "Registrar material"
               : isSaldoInicial
                 ? "Informar saldo inicial"
                 : "Novo lançamento"}
           </Text>
           <Text style={s.headerSub}>
             {isPreco
-              ? "Atualize o preço de um produto"
+              ? "Atualize o histórico de materiais"
               : isSaldoInicial
                 ? "Informe o valor que já havia na conta"
                 : "Preencha os dados do lançamento"}
@@ -531,39 +538,37 @@ export default function NovoLancamentoScreen({ navigation, route }) {
               </TouchableOpacity>
             </View>
 
-            {!isSaldoInicial && CLASSIFICACOES_POR_TIPO[tipo]?.length > 1 && (
+            {!isSaldoInicial && (
               <View style={s.bloco}>
-                <Text style={s.blocoTitulo}>Classificação no DRE</Text>
-                <View style={s.listaCategorias}>
-                  {CLASSIFICACOES_POR_TIPO[tipo].map((classificacao) => {
-                    const ativa = classificacaoDre === classificacao;
-                    return (
-                      <TouchableOpacity
-                        key={classificacao}
-                        style={[
-                          s.categoriaItem,
-                          ativa && {
-                            borderColor: tipoAtual.cor,
-                            backgroundColor: tipoAtual.bg,
-                          },
-                        ]}
-                        onPress={() => setClassificacaoDre(classificacao)}
-                      >
-                        <Text
-                          style={[
-                            s.categoriaTexto,
-                            ativa && {
-                              color: tipoAtual.cor,
-                              fontWeight: "700",
-                            },
-                          ]}
-                        >
-                          {CLASSIFICACOES_DRE[classificacao]}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
+                <Text style={s.blocoTitulo}>Parcelamento</Text>
+                <View style={s.parcelasRow}>
+                  <TouchableOpacity
+                    style={[
+                      s.parcelaOption,
+                      parcelas === 1 && { backgroundColor: tipoAtual.bg, borderColor: tipoAtual.cor },
+                    ]}
+                    onPress={() => setParcelas(1)}
+                  >
+                    <Text style={[s.parcelaOptionText, parcelas === 1 && { color: tipoAtual.cor }]}>À vista</Text>
+                  </TouchableOpacity>
+                  <View style={s.parcelaInputWrap}>
+                    <TextInput
+                      style={s.parcelaInput}
+                      value={String(parcelas)}
+                      onChangeText={(txt) => {
+                        const numero = Number(txt.replace(/\D/g, ""));
+                        setParcelas(numero > 1 ? numero : 1);
+                      }}
+                      keyboardType="number-pad"
+                    />
+                    <Text style={s.parcelaLabel}>vezes</Text>
+                  </View>
                 </View>
+                {parcelas > 1 && (
+                  <Text style={s.parcelaAjuda}>
+                    O valor será dividido em {parcelas} parcelas mensais.
+                  </Text>
+                )}
               </View>
             )}
 
@@ -653,8 +658,8 @@ export default function NovoLancamentoScreen({ navigation, route }) {
                       "Não selecionada",
                   },
                   {
-                    label: "Classificação DRE",
-                    valor: CLASSIFICACOES_DRE[classificacaoDre],
+                    label: "Parcelas",
+                    valor: parcelas > 1 ? `${parcelas}x` : "À vista",
                   },
                   {
                     label: "Valor",
@@ -710,7 +715,7 @@ export default function NovoLancamentoScreen({ navigation, route }) {
           ) : (
             <Text style={s.botaoSalvarTexto}>
               {isPreco
-                ? "Registrar preço"
+                ? "Registrar material"
                 : isSaldoInicial
                   ? "Salvar saldo inicial"
                   : "Salvar lançamento"}
@@ -894,6 +899,47 @@ const s = StyleSheet.create({
     color: "#1E293B",
     fontSize: 15,
   },
+
+  parcelasRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  parcelaOption: {
+    flex: 1,
+    backgroundColor: "#fff",
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    alignItems: "center",
+  },
+  parcelaOptionText: {
+    color: "#475569",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  parcelaInputWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minWidth: 120,
+  },
+  parcelaInput: {
+    width: 42,
+    color: "#0F172A",
+    fontSize: 16,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  parcelaLabel: { color: "#64748B", fontSize: 12, fontWeight: "600" },
+  parcelaAjuda: { marginTop: 8, color: "#64748B", fontSize: 12 },
 
   resumoCard: {
     backgroundColor: "#fff",

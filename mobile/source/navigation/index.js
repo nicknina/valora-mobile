@@ -13,8 +13,7 @@ import NovoLancamentoScreen from "../screens/NovoLancamentoScreen";
 import PrecosMediosScreen from "../screens/PrecosMediosScreen";
 import NotasScreen from "../screens/NotasScreen";
 import NovaNotaFiscalScreen from "../screens/NovaNotaFiscalScreen";
-import AlertasScreen from "../screens/AlertasScreen"; // FIX: novo import
-import DreScreen from "../screens/DreScreen";
+import AlertasScreen from "../screens/AlertasScreen";
 import ContasScreen from "../screens/ContasScreen";
 
 const Stack = createNativeStackNavigator();
@@ -72,7 +71,7 @@ function TabsAutenticadas() {
         name="PrecosMedios"
         component={PrecosMediosScreen}
         options={{
-          tabBarLabel: "Preços",
+          tabBarLabel: "Histórico",
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? "trending-up" : "trending-up-outline"}
@@ -90,20 +89,6 @@ function TabsAutenticadas() {
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? "document-text" : "document-text-outline"}
-              size={size}
-              color={color}
-            />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="DRE"
-        component={DreScreen}
-        options={{
-          tabBarLabel: "DRE",
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons
-              name={focused ? "calculator" : "calculator-outline"}
               size={size}
               color={color}
             />

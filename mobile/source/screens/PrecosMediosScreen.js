@@ -119,8 +119,8 @@ export default function PrecosMediosScreen({ navigation }) {
       <View style={s.header}>
         <View style={s.headerRow}>
           <View>
-            <Text style={s.headerTitulo}>Preços Médios</Text>
-            <Text style={s.headerSub}>Seus registros de mercado</Text>
+            <Text style={s.headerTitulo}>Histórico de materiais</Text>
+            <Text style={s.headerSub}>Seus registros de material e mercado</Text>
           </View>
           <TouchableOpacity
             style={s.botaoNovo}

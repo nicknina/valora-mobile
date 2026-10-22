@@ -41,7 +41,7 @@ async function verificarAlertasDoMei(id_mei) {
     .gte('data_lancamento', inicioAno);
 
   const totalDespesasMes = (lancamentosAno || [])
-    .filter((l) => l.tipo === 'despesa' && l.data_lancamento >= inicioMes)
+    .filter((l) => (l.tipo === 'gasto' || l.tipo === 'despesa' || l.tipo === 'custo') && l.data_lancamento >= inicioMes)
     .reduce((acc, l) => acc + parseFloat(l.valor), 0);
 
   const totalFaturamentoAno = (lancamentosAno || [])
